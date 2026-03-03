@@ -6,6 +6,69 @@ const fs = require("fs");
 // endTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
 // Returns: string formatted as h:mm:ss
 // ============================================================
+
+
+// helper functions
+function timeStringToSeconds(timeString) {
+    const [time, modifier] = timeString.split(" ");
+    
+    const padded = time.padStart(6, "0");
+    const hours = parseInt(padded.slice(0, 2));
+    const minutes = parseInt(padded.slice(2, 4));
+    const seconds = parseInt(padded.slice(4, 6));
+
+  
+    let hour24 = hours;
+    if (modifier === "pm" && hours !== 12) {
+        hour24 += 12;
+    } else if (modifier === "am" && hours === 12) {
+        hour24 = 0;
+    }
+
+    return hour24 * 3600 + minutes * 60 + seconds;
+}
+
+
+function secondsToDurationString(totalSeconds) {
+    const hours = Math.floor(totalSeconds / 3600);
+    const remaining = totalSeconds % 3600;
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+
+    const hStr = String(hours);
+    const mStr = String(minutes).padStart(2, "0");
+    const sStr = String(seconds).padStart(2, "0");
+    
+    return hStr + mStr + sStr;
+}
+
+
+function durationStringToSeconds(durationStr) {
+    const padded = durationStr.padStart(6, "0");
+    const hours = parseInt(padded.slice(0, padded.length - 4)) || 0;
+    const minutes = parseInt(padded.slice(-4, -2));
+    const seconds = parseInt(padded.slice(-2));
+    
+    return hours * 3600 + minutes * 60 + seconds;
+}
+
+
+function secondsToDurationString(totalSeconds) {
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const remaining = totalSeconds % 3600;
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+
+    const hStr = String(hours);
+    const mStr = String(minutes).padStart(2, "0");
+    const sStr = String(seconds).padStart(2, "0");
+    
+    return hStr + mStr + sStr;
+}
+
+
+
 function getShiftDuration(startTime, endTime) {
     // TODO: Implement this function
 }
