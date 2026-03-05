@@ -74,7 +74,13 @@ function getShiftDuration(startTime, endTime) {
 
     const startSeconds = timeStringToSeconds(startTime);
     const endSeconds = timeStringToSeconds(endTime);
-    let durationSeconds = endSeconds - startSeconds;
+   let durationSeconds;
+
+   if (endSeconds < startSeconds) {
+    durationSeconds = (24 * 3600 - startSeconds) + endSeconds;
+   } else {
+    durationSeconds = endSeconds - startSeconds;
+   }
 
     return secondsToDurationString(durationSeconds);
 
@@ -121,7 +127,11 @@ function getActiveTime(shiftDuration, idleTime) {
     // TODO: Implement this function
         const shiftSeconds = durationStringToSeconds(shiftDuration);
         const idleSeconds = durationStringToSeconds(idleTime);
-        const activeSeconds = shiftSeconds - idleSeconds;
+        let activeSeconds = shiftSeconds - idleSeconds;
+
+        if (activeSeconds < 0) {
+            activeSeconds = 0;
+           }
     return secondsToDurationString(activeSeconds);  
 
 }
@@ -357,7 +367,7 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
     const normalQuotaSeconds=30240;
     const eidQuotaSeconds=21600;
     let dayOff=" ";
-    requiredHours=0;
+    let requiredHours=0;
     for (let i = 0; i < rateslines.length; i++){
         const cols = rateslines[i].split(',');
         if(cols[0] == driverID){
@@ -369,7 +379,11 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
         const cols = lines[i].split(',');
         if (new Date(cols[2]).toLocaleDateString('en-US', { weekday: 'long' })!=dayOff && cols[0] === driverID && parseInt(cols[2].slice(5, 7), 10) == month) {
           
-          if (cols[2].slice(0,4) === "2025" && parseInt(cols[2].slice(5, 7), 10) === 4 && cols[2].slice(8,10) >= 10 && cols[2].slice(8,10) <= 30) {
+          const year = parseInt(cols[2].slice(0,4));
+          const monthNum = parseInt(cols[2].slice(5,7));
+          const day = parseInt(cols[2].slice(8,10));
+
+          if (year === 2025 && monthNum === 4 && day >= 10 && day <= 30) {
             requiredHours+=eidQuotaSeconds;
           }
           else {
@@ -383,7 +397,11 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
     // bonus reduction
     
 
-    requiredHours-= bonusCount*7200
+    requiredHours -= bonusCount * 7200;
+
+    if (requiredHours < 0) {
+    requiredHours = 0;
+    }
 
 
    return secondsToDurationString(requiredHours);
@@ -411,17 +429,18 @@ let tier="";
 let netPay=0;   
 let deductionRateperHour=0;
 let missingHours=0;
-let hourlyRate=0;
+let basePay=0;
 for (let i = 0; i < rateslines.length; i++){
         const cols = rateslines[i].split(',').map(col => col.trim());
         if(cols[0] == driverID){
             tier=cols[3];
-            hourlyRate=parseInt(cols[2]);
+            basePay=parseInt(cols[2]);
             deductionRateperHour=parseInt(cols[2])/185;
         }
     }
-
-  if (durationStringToSeconds(actualHours) < durationStringToSeconds(requiredHours)) {
+if (durationStringToSeconds(actualHours) >= durationStringToSeconds(requiredHours)) {
+    return basePay;
+} else if (durationStringToSeconds(actualHours) < durationStringToSeconds(requiredHours)) {
  
       missingHours = secondsToDurationString(durationStringToSeconds(requiredHours) - durationStringToSeconds(actualHours));
       if (tier === "1") {
@@ -456,7 +475,7 @@ for (let i = 0; i < rateslines.length; i++){
         }
     }
 
-       const netpay = hourlyRate - (Math.floor(missingHours / 3600) * deductionRateperHour);
+       const netpay = basePay - (Math.floor(missingHours / 3600) * deductionRateperHour);
 
 
 return Math.round(netpay);
