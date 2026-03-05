@@ -30,18 +30,7 @@ function timeStringToSeconds(timeString) {
 
 
 
-function secondsToDurationString(totalSeconds) {
-    const hours = Math.floor(totalSeconds / 3600);
-    const remaining = totalSeconds % 3600;
-    const minutes = Math.floor(remaining / 60);
-    const seconds = remaining % 60;
 
-    const hStr = String(hours);
-    const mStr = String(minutes).padStart(2, "0");
-    const sStr = String(seconds).padStart(2, "0");
-    
-    return hStr + mStr + sStr;
-}
 
 
 function durationStringToSeconds(durationStr) {
@@ -416,20 +405,61 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
 function getNetPay(driverID, actualHours, requiredHours, rateFile) {
     // TODO: Implement this function
 
+const rates = fs.readFileSync(rateFile, 'utf8');
+const rateslines = rates.trim().split('\n');
+let tier="";
+let netPay=0;   
+let deductionRateperHour=0;
+let missingHours=0;
+let hourlyRate=0;
+for (let i = 0; i < rateslines.length; i++){
+        const cols = rateslines[i].split(',').map(col => col.trim());
+        if(cols[0] == driverID){
+            tier=cols[3];
+            hourlyRate=parseInt(cols[2]);
+            deductionRateperHour=parseInt(cols[2])/185;
+        }
+    }
+
+  if (durationStringToSeconds(actualHours) < durationStringToSeconds(requiredHours)) {
+ 
+      missingHours = secondsToDurationString(durationStringToSeconds(requiredHours) - durationStringToSeconds(actualHours));
+      if (tier === "1") {
+          missingHours = durationStringToSeconds(missingHours);
+          if (missingHours <=180000) {
+            missingHours=0;
+          } else if (missingHours > 180000 ) {
+            missingHours-=180000;
+          }
+        } else if (tier === "2") {
+          missingHours = durationStringToSeconds(missingHours);
+            if (missingHours <= 72000) {
+                missingHours=0;
+            } else if (missingHours > 72000) {
+                missingHours-=72000;
+            }
+        } else if (tier === "3") {
+            missingHours = durationStringToSeconds(missingHours);
+            if (missingHours <= 36000) {   
+                missingHours=0;
+            } else if (missingHours > 36000) {
+                missingHours-=36000;
+            }
+        }
+        else if (tier === "4") {    
+            missingHours = durationStringToSeconds(missingHours);
+            if (missingHours <= 10800) {
+                missingHours=0;
+            } else if (missingHours > 10800) {
+                missingHours-=10800;
+            }
+        }
+    }
+
+       const netpay = hourlyRate - (Math.floor(missingHours / 3600) * deductionRateperHour);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+return Math.round(netpay);
     
 }
 
